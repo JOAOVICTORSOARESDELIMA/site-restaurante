@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Pedidos — Impressão</title>
+  <meta name="theme-color" content="#4a2c17">
+  <link rel="icon" href="icone.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo.css">
+  <style>
+    body { padding-bottom: 40px; }
+    .ajustes { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; align-items: end; }
+    .ajustes .rotulo { margin-top: 0; }
+    .liga { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+    .liga input { width: 22px; height: 22px; accent-color: var(--laranja); }
+    .pedido { background: var(--branco); border: 1.5px solid var(--borda); border-radius: 18px; padding: 14px 16px; }
+    .pedido.novo { border-color: var(--laranja); background: var(--laranja-claro); }
+    .pedido .linha1 { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; }
+    .pedido .detalhe { color: var(--suave); font-size: .86rem; margin: 2px 0 8px; }
+    .pedido pre { margin: 0 0 10px; font: inherit; font-size: .88rem; white-space: pre-wrap; }
+    .etiqueta { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; background: #e2f6e9; color: #17703a; }
+    .pedido.novo .etiqueta { background: var(--laranja); color: #fff; }
+
+    /* ---------- Cupom (só aparece na impressão) ---------- */
+    #cupom { display: none; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      body > *:not(#cupom) { display: none !important; }
+      #cupom {
+        display: block; color: #000; padding: 2mm 3mm 8mm;
+        font-family: Arial, Helvetica, sans-serif; font-size: 12.5px; line-height: 1.35; font-weight: 600;
+      }
+      #cupom .centro { text-align: center; }
+      #cupom .grande { font-size: 20px; font-weight: 800; }
+      #cupom .forte { font-size: 15px; font-weight: 800; }
+      #cupom hr { border: none; border-top: 1.5px dashed #000; margin: 6px 0; }
+      #cupom pre { margin: 0; font: inherit; white-space: pre-wrap; word-break: break-word; }
+    }
+  </style>
+  <style id="papel"></style>
+</head>
+<body>
+  <header class="topo compacto">
+    <div class="marca">
+      <svg class="chapeu" viewBox="0 0 64 56" aria-hidden="true">
+        <g fill="currentColor">
+          <circle cx="19" cy="22" r="12"/><circle cx="32" cy="16" r="14"/><circle cx="45" cy="22" r="12"/>
+          <path d="M17 24h30v18H17z"/>
+          <rect x="17" y="45" width="30" height="8" rx="2.5"/>
+        </g>
+        <ellipse cx="27" cy="25" rx="3.2" ry="4.8" fill="#fff"/>
+        <g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+          <path d="M27 30v9"/>
+          <path d="M37 20v19M34.2 20v5.5a2.8 2.8 0 0 0 5.6 0V20"/>
+        </g>
+      </svg>
+      <h1 class="nome">Restaurante do Sabor</h1>
+    </div>
+    <p class="chamada">Pedidos de hoje</p>
+    <p class="data" id="dataHoje"></p>
+  </header>
+
+  <main>
+    <form class="cartao" id="login" hidden>
+      <h2>Entrar</h2>
+      <p class="explica">Use o mesmo e-mail e senha do painel do cardápio.</p>
+      <label class="rotulo" for="email">E-mail</label>
+      <input type="email" id="email" autocomplete="username" required>
+      <label class="rotulo" for="senha">Senha</label>
+      <input type="password" id="senha" autocomplete="current-password" required>
+      <div class="aviso erro" id="erroLogin" role="alert" hidden></div>
+      <button class="botao cheio" id="botaoEntrar" type="submit">Entrar</button>
+    </form>
+
+    <div id="painel" hidden>
+      <div class="cartao secao">
+        <div class="aviso certo" id="situacao" role="status">Aguardando pedidos…</div>
+        <div class="ajustes">
+          <label class="liga"><input type="checkbox" id="auto"> Imprimir sozinho</label>
+          <div>
+            <label class="rotulo" for="largura">Largura do papel</label>
+            <select id="largura">
+              <option value="80">80 mm (largo)</option>
+              <option value="58">58 mm (estreito)</option>
+            </select>
+          </div>
+        </div>
+        <p style="margin:14px 0 0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <button class="botao-texto" id="teste" type="button">Imprimir cupom de teste</button>
+          <a class="botao-texto" href="admin.html">Ir para o cardápio</a>
+        </p>
+      </div>
+
+      <div class="cabeca"><h2 id="tituloLista">Nenhum pedido hoje ainda</h2></div>
+      <div class="lista" id="lista" style="grid-template-columns:1fr"></div>
+    </div>
+  </main>
+
+  <div id="cupom"></div>
+
+  <script src="config.js"></script>
+  <script src="cardapio.js"></script>
+  <script src="banco.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const INTERVALO = 5000; // confere pedidos novos a cada 5 segundos
+    const pedidos = new Map(); // id -> pedido
+    let dia = hojeTexto();
+    let ultimo = 0;            // horário do pedido mais recente já recebido
+    let impressos = lerImpressos();
+    let relogio = null;
+
+    $("dataHoje").textContent = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+
+    /* ----- Ajustes guardados neste computador ----- */
+    function ler(chave, padrao) { try { return localStorage.getItem(chave) ?? padrao; } catch (e) { return padrao; } }
+    function gravar(chave, valor) { try { localStorage.setItem(chave, valor); } catch (e) {} }
+
+    $("auto").checked = ler("pedidosAuto", "sim") === "sim";
+    $("auto").onchange = () => gravar("pedidosAuto", $("auto").checked ? "sim" : "nao");
+    $("largura").value = ler("pedidosPapel", "80");
+    $("largura").onchange = () => { gravar("pedidosPapel", $("largura").value); aplicarPapel(); };
+    aplicarPapel();
+
+    function aplicarPapel() {
+      const mm = $("largura").value === "58" ? 58 : 80;
+      $("papel").textContent = `@page { size: ${mm}mm auto; margin: 0; } @media print { #cupom { width: ${mm}mm; } }`;
+    }
+
+    function lerImpressos() {
+      try {
+        // apaga registros de dias anteriores
+        Object.keys(localStorage).forEach((k) => { if (k.startsWith("impressos-") && k !== "impressos-" + dia) localStorage.removeItem(k); });
+        return new Set(JSON.parse(localStorage.getItem("impressos-" + dia)) || []);
+      } catch (e) { return new Set(); }
+    }
+    function marcarImpresso(id) {
+      impressos.add(id);
+      gravar("impressos-" + dia, JSON.stringify([...impressos]));
+    }
+
+    /* ----- Login ----- */
+    iniciar();
+    async function iniciar() {
+      if (!BANCO_LIGADO) { $("painel").hidden = false; situacao("erro", "O banco de dados não está ligado (config.js)."); return; }
+      if (!(await tokenAtual())) { $("login").hidden = false; return; }
+      abrir();
+    }
+    $("login").onsubmit = async (ev) => {
+      ev.preventDefault();
+      $("erroLogin").hidden = true;
+      $("botaoEntrar").disabled = true;
+      try {
+        await entrar($("email").value.trim(), $("senha").value);
+        $("senha").value = "";
+        abrir();
+      } catch (e) {
+        $("erroLogin").textContent = e.message;
+        $("erroLogin").hidden = false;
+      }
+      $("botaoEntrar").disabled = false;
+    };
+
+    function abrir() {
+      $("login").hidden = true;
+      $("painel").hidden = false;
+      verificar();
+      clearInterval(relogio);
+      relogio = setInterval(verificar, INTERVALO);
+    }
+
+    function situacao(tipo, texto) {
+      $("situacao").className = "aviso " + tipo;
+      $("situacao").style.margin = "0 0 16px";
+      $("situacao").textContent = texto;
+    }
+
+    /* ----- Busca pedidos novos ----- */
+    let buscando = false;
+    async function verificar() {
+      if (buscando) return;
+      buscando = true;
+      if (hojeTexto() !== dia) { // virou o dia: começa de novo
+        dia = hojeTexto(); ultimo = 0; pedidos.clear(); impressos = lerImpressos(); desenhar();
+      }
+      try {
+        const novos = await buscarPedidos(dia, ultimo);
+        const chegaram = [];
+        Object.entries(novos).forEach(([id, p]) => {
+          if (!p || pedidos.has(id)) return;
+          p.id = id;
+          pedidos.set(id, p);
+          ultimo = Math.max(ultimo, Number(p.criadoEm) || 0);
+          if (!impressos.has(id)) chegaram.push(p);
+        });
+        if (chegaram.length) {
+          chegaram.sort((a, b) => a.criadoEm - b.criadoEm);
+          apitar();
+          if ($("auto").checked) chegaram.forEach(imprimir);
+          desenhar();
+        }
+        situacao("certo", "Ligado. Aguardando pedidos… (conferido às " + new Date().toLocaleTimeString("pt-BR") + ")");
+      } catch (e) {
+        if (e.message === "login") {
+          clearInterval(relogio);
+          $("painel").hidden = true; $("login").hidden = false;
+        } else if (e.message === "permissao") {
+          situacao("erro", "Esta conta não tem permissão para ver os pedidos. Confira as regras do Firebase.");
+        } else {
+          situacao("erro", "Sem conexão com a internet. Tentando de novo…");
+        }
+      }
+      buscando = false;
+    }
+
+    /* ----- Lista na tela ----- */
+    function hora(p) {
+      return new Date(Number(p.criadoEm) || Date.now()).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+    // Onde o pedido vai: salão, viagem, entrega ou retirada
+    function ondeTexto(p) {
+      if (p.tipo === "Salão") return "Salão";
+      if (p.tipo === "Viagem") return "Viagem";
+      return p.endereco ? "Entrega: " + p.endereco : "Retirar no local";
+    }
+    function desenhar() {
+      const lista = $("lista");
+      lista.textContent = "";
+      const todos = [...pedidos.values()].sort((a, b) => b.criadoEm - a.criadoEm);
+      $("tituloLista").textContent = todos.length === 0 ? "Nenhum pedido hoje ainda" : todos.length === 1 ? "1 pedido hoje" : todos.length + " pedidos hoje";
+      todos.forEach((p) => {
+        const feito = impressos.has(p.id);
+        const el = document.createElement("div");
+        el.className = "pedido" + (feito ? "" : " novo");
+        const l1 = document.createElement("div"); l1.className = "linha1";
+        const a = document.createElement("span"); a.textContent = `Nº ${p.codigo} · ${p.nome}`;
+        const et = document.createElement("span"); et.className = "etiqueta"; et.textContent = feito ? "Impresso" : "Novo";
+        l1.append(a, et);
+        const det = document.createElement("div"); det.className = "detalhe";
+        det.textContent = `${hora(p)} · ${ondeTexto(p)} · ${p.pagamento || ""}` + (p.total ? ` · ${emReais(Number(p.total))}` : "");
+        const itens = document.createElement("pre"); itens.textContent = p.itens + (p.obs ? "\n\nObs: " + p.obs : "");
+        const bt = document.createElement("button");
+        bt.type = "button"; bt.className = "botao-texto"; bt.textContent = feito ? "Imprimir de novo" : "Imprimir";
+        bt.onclick = () => imprimir(p);
+        el.append(l1, det, itens, bt);
+        lista.append(el);
+      });
+    }
+
+    /* ----- Cupom e impressão ----- */
+    function montarCupom(p) {
+      const c = $("cupom");
+      c.textContent = "";
+      const bloco = (classe, texto, tag) => {
+        const d = document.createElement(tag || "div");
+        if (classe) d.className = classe;
+        d.textContent = texto;
+        c.append(d);
+      };
+      const risco = () => c.append(document.createElement("hr"));
+      const quando = new Date(Number(p.criadoEm) || Date.now());
+
+      bloco("centro forte", NOME_RESTAURANTE.toUpperCase());
+      bloco("centro grande", "PEDIDO Nº " + p.codigo);
+      bloco("centro", quando.toLocaleDateString("pt-BR") + " " + quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      risco();
+      if (p.tipo === "Salão" || p.tipo === "Viagem") {
+        // Pedido do garçom: chama o cliente pelo nome, então ele sai em destaque
+        bloco("grande", p.tipo.toUpperCase());
+        bloco("grande", p.nome);
+      } else {
+        bloco("forte", "Cliente: " + p.nome);
+        if (p.endereco) { bloco("forte", "ENTREGA"); bloco("", p.endereco); }
+        else bloco("forte", "RETIRAR NO LOCAL");
+      }
+      risco();
+      bloco("", p.itens, "pre");
+      risco();
+      if (p.total) bloco("forte", (p.tipo === "Salão" ? "TOTAL PRATOS: " : "TOTAL QUENTINHAS: ") + emReais(Number(p.total)));
+      if (p.pagamento) bloco("", "Pagamento: " + p.pagamento);
+      if (p.obs) bloco("", "Obs: " + p.obs);
+    }
+
+    const fila = [];
+    let imprimindo = false;
+    function imprimir(p) { fila.push(p); proximo(); }
+    function proximo() {
+      if (imprimindo || !fila.length) return;
+      imprimindo = true;
+      const p = fila.shift();
+      montarCupom(p);
+      window.print(); // com o atalho especial do Chrome sai direto, sem janela
+      if (p.id) { marcarImpresso(p.id); desenhar(); }
+      setTimeout(() => { imprimindo = false; proximo(); }, 1200);
+    }
+
+    $("teste").onclick = () => imprimir({
+      codigo: "0000", nome: "Cliente de teste", endereco: "Rua de Exemplo, 123 — Centro", pagamento: "Pix", total: 51,
+      itens: "Quentinhas\n• 1x M — R$ 23,00\n• 1x G — R$ 28,00\n\nAcompanhamentos\n• Feijão carioca\n• Arroz branco\n\nProteínas\n• Bife acebolado",
+      obs: "Este é um cupom de teste.", criadoEm: Date.now(),
+    });
+
+    /* ----- Aviso sonoro de pedido novo ----- */
+    let audio = null;
+    document.addEventListener("click", () => { try { audio = audio || new AudioContext(); } catch (e) {} }, { once: true });
+    function apitar() {
+      if (!audio) return;
+      try {
+        [0, 0.25].forEach((t) => {
+          const o = audio.createOscillator(), g = audio.createGain();
+          o.frequency.value = 880; g.gain.value = 0.2;
+          o.connect(g); g.connect(audio.destination);
+          o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.18);
+        });
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>

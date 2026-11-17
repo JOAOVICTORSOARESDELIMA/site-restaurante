@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Painel — Cardápio do dia</title>
+  <meta name="theme-color" content="#3a2a20">
+  <link rel="icon" href="icone.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="topo compacto">
+    <div class="marca">
+      <svg class="chapeu" viewBox="0 0 64 56" aria-hidden="true">
+        <g fill="currentColor">
+          <circle cx="19" cy="22" r="12"/><circle cx="32" cy="16" r="14"/><circle cx="45" cy="22" r="12"/>
+          <path d="M17 24h30v18H17z"/>
+          <rect x="17" y="45" width="30" height="8" rx="2.5"/>
+        </g>
+        <ellipse cx="27" cy="25" rx="3.2" ry="4.8" fill="#fff"/>
+        <g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+          <path d="M27 30v9"/>
+          <path d="M37 20v19M34.2 20v5.5a2.8 2.8 0 0 0 5.6 0V20"/>
+        </g>
+      </svg>
+      <h1 class="nome">Restaurante do Sabor</h1>
+    </div>
+    <p class="chamada">Painel do cardápio</p>
+    <p class="data" id="dataHoje"></p>
+  </header>
+
+  <main>
+    <!-- Login (só aparece com o banco de dados ligado) -->
+    <form class="cartao" id="login" hidden>
+      <h2>Entrar</h2>
+      <p class="explica">Só o administrador pode mudar o cardápio.</p>
+      <label class="rotulo" for="email">E-mail</label>
+      <input type="email" id="email" autocomplete="username" required>
+      <label class="rotulo" for="senha">Senha</label>
+      <input type="password" id="senha" autocomplete="current-password" required>
+      <div class="aviso erro" id="erroLogin" role="alert" hidden></div>
+      <button class="botao cheio" id="botaoEntrar" type="submit">Entrar</button>
+    </form>
+
+    <div id="painel" hidden>
+      <div class="aviso" id="modoTeste" hidden>
+        <strong>Modo de teste:</strong> o banco de dados online ainda não foi ligado.
+        O cardápio publicado aqui aparece só neste aparelho.
+      </div>
+
+      <div class="cartao secao">
+        <div class="aviso" id="situacao" role="status"></div>
+        <label class="rotulo" for="linkFixo">Link do cardápio para os clientes (sempre o mesmo)</label>
+        <div class="link-fixo">
+          <input type="text" id="linkFixo" readonly>
+          <button class="botao" id="copiar" type="button">Copiar</button>
+        </div>
+        <p style="margin:12px 0 0;text-align:right">
+          <a class="botao-texto" href="pedidos.html">Pedidos e impressão</a>
+          <a class="botao-texto" id="verSite" target="_blank" rel="noopener">Ver como cliente</a>
+          <button class="botao-texto" id="sair" type="button" hidden>Sair</button>
+        </p>
+      </div>
+
+      <div class="cabeca">
+        <div>
+          <h2>O que tem hoje?</h2>
+          <p class="explica">Marque as comidas do dia e toque em Publicar.</p>
+        </div>
+      </div>
+      <input type="search" id="busca" placeholder="Procurar comida..." aria-label="Procurar comida" style="margin-bottom:20px">
+
+      <div id="cardapio"></div>
+    </div>
+  </main>
+
+  <div class="barra" id="barra" hidden>
+    <span class="texto" id="barraTexto"></span>
+    <button class="botao destaque" id="publicar" type="button">Publicar</button>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="cardapio.js"></script>
+  <script src="banco.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let marcados = new Set();
+    let publicadoHoje = false;
+    const caixas = []; // { id, cb, el, texto }
+    const grupos = []; // funções que atualizam o "Marcar todos"
+
+    $("dataHoje").textContent = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+
+    const linkSite = location.href.split("#")[0].split("?")[0].replace(/admin\.html$/i, "");
+    $("linkFixo").value = linkSite;
+    $("verSite").href = linkSite + "index.html";
+
+    iniciar();
+
+    async function iniciar() {
+      if (BANCO_LIGADO && !(await tokenAtual())) {
+        $("login").hidden = false;
+        return;
+      }
+      abrirPainel();
+    }
+
+    $("login").onsubmit = async (ev) => {
+      ev.preventDefault();
+      $("erroLogin").hidden = true;
+      $("botaoEntrar").disabled = true;
+      try {
+        await entrar($("email").value.trim(), $("senha").value);
+        $("senha").value = "";
+        abrirPainel();
+      } catch (e) {
+        $("erroLogin").textContent = e.message;
+        $("erroLogin").hidden = false;
+      }
+      $("botaoEntrar").disabled = false;
+    };
+
+    $("sair").onclick = () => { sair(); location.reload(); };
+
+    async function abrirPainel() {
+      $("login").hidden = true;
+      let dia = null;
+      try { dia = await buscarCardapio(); } catch (e) {}
+      // Começa com o que foi publicado da última vez, para só ajustar o que mudou
+      marcados = new Set(dia ? dia.ids : []);
+      publicadoHoje = !!dia && dia.data === hojeTexto();
+      if (!caixas.length) montar();
+      $("modoTeste").hidden = BANCO_LIGADO;
+      $("sair").hidden = !BANCO_LIGADO;
+      $("painel").hidden = false;
+      $("barra").hidden = false;
+      situacao(publicadoHoje ? "certo" : "", publicadoHoje
+        ? `Cardápio de hoje publicado com ${marcados.size} comidas. Os clientes já estão vendo.`
+        : "O cardápio de hoje ainda não foi publicado. Os clientes veem o aviso de que ainda não saiu.");
+      contar();
+    }
+
+    function situacao(tipo, texto) {
+      $("situacao").className = "aviso " + tipo;
+      $("situacao").textContent = texto;
+    }
+
+    function montar() {
+      CARDAPIO.forEach((cat) => {
+        const sec = document.createElement("section");
+        sec.className = "categoria";
+        const cabeca = document.createElement("div"); cabeca.className = "cabeca";
+        const h = tituloCategoria(cat);
+        const todos = document.createElement("button");
+        todos.type = "button"; todos.className = "botao-texto";
+        cabeca.append(h, todos);
+        const lista = document.createElement("div"); lista.className = "lista";
+        const doGrupo = [];
+
+        cat.itens.forEach(([id, nome, desc]) => {
+          const el = document.createElement("label");
+          el.className = "item";
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = marcados.has(id);
+          el.classList.toggle("marcado", cb.checked);
+          const info = document.createElement("span"); info.className = "info";
+          const n = document.createElement("span"); n.className = "nome"; n.textContent = nome;
+          const d = document.createElement("span"); d.className = "desc"; d.textContent = desc;
+          info.append(n, d);
+          el.append(info, cb);
+          lista.append(el);
+          const reg = { id, cb, el, texto: (nome + " " + desc).toLowerCase() };
+          cb.onchange = () => { marcar(reg, cb.checked); mudou(); };
+          caixas.push(reg);
+          doGrupo.push(reg);
+        });
+
+        grupos.push(() => {
+          todos.textContent = doGrupo.every((r) => r.cb.checked) ? "Desmarcar todos" : "Marcar todos";
+        });
+        todos.onclick = () => {
+          const ligar = !doGrupo.every((r) => r.cb.checked);
+          doGrupo.forEach((r) => marcar(r, ligar));
+          mudou();
+        };
+        sec.append(cabeca, lista);
+        $("cardapio").append(sec);
+      });
+    }
+
+    function marcar(reg, ligado) {
+      reg.cb.checked = ligado;
+      reg.el.classList.toggle("marcado", ligado);
+      if (ligado) marcados.add(reg.id); else marcados.delete(reg.id);
+    }
+
+    function contar() {
+      const q = marcados.size;
+      $("barraTexto").textContent = q === 0 ? "Nenhuma comida marcada" : q === 1 ? "1 comida marcada" : q + " comidas marcadas";
+      grupos.forEach((f) => f());
+    }
+
+    function mudou() {
+      contar();
+      situacao("", "Você mudou o cardápio. Toque em Publicar para os clientes verem.");
+    }
+
+    $("busca").oninput = () => {
+      const t = $("busca").value.trim().toLowerCase();
+      caixas.forEach((r) => (r.el.hidden = !!t && !r.texto.includes(t)));
+    };
+
+    $("publicar").onclick = async () => {
+      if (marcados.size === 0) {
+        situacao("erro", "Marque pelo menos uma comida antes de publicar.");
+        $("situacao").scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      $("publicar").disabled = true;
+      try {
+        await publicarCardapio([...marcados].sort((a, b) => a - b));
+        situacao("certo", `Cardápio de hoje publicado com ${marcados.size} comidas. Os clientes já estão vendo.`);
+      } catch (e) {
+        if (e.message === "login" || e.message === "permissao") {
+          situacao("erro", e.message === "login"
+            ? "Sua sessão acabou. Entre de novo para publicar."
+            : "Esta conta não tem permissão para mudar o cardápio.");
+          if (e.message === "login") { $("painel").hidden = true; $("barra").hidden = true; $("login").hidden = false; }
+        } else {
+          situacao("erro", "Não foi possível publicar. Verifique a internet e tente de novo.");
+        }
+      }
+      $("publicar").disabled = false;
+      $("situacao").scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
+    $("copiar").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText($("linkFixo").value);
+      } catch (e) {
+        $("linkFixo").select();
+        document.execCommand("copy");
+      }
+      $("copiar").textContent = "Copiado!";
+      setTimeout(() => ($("copiar").textContent = "Copiar"), 2000);
+    };
+  </script>
+</body>
+</html>

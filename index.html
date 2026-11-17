@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurante do Sabor — Cardápio do dia</title>
+  <meta name="description" content="Almoços e quentinhas. Veja o cardápio do dia e peça pelo WhatsApp.">
+  <meta name="theme-color" content="#3a2a20">
+  <link rel="icon" href="icone.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <svg hidden>
+    <symbol id="icone-whats" viewBox="0 0 24 24">
+      <path d="M12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2zm5.800 14.200c-.2.700-1.400 1.300-2 1.400-.5.100-1.200.100-1.900-.100-.4-.100-1-.3-1.700-.600-3-1.300-5-4.300-5.100-4.500-.2-.2-1.200-1.600-1.200-3 0-1.400.700-2.100 1-2.400.3-.3.600-.3.800-.3h.600c.2 0 .4 0 .7.500l.9 2.200c.1.200.1.400 0 .600l-.4.600-.4.500c-.1.100-.3.300-.1.600.2.300.700 1.200 1.600 2 1.100 1 2 1.300 2.300 1.400.3.100.5.100.600-.100l.900-1.100c.2-.3.4-.2.700-.100l2.100 1c.3.100.5.200.600.3.100.200.100.700-.100 1.300z"/>
+    </symbol>
+  </svg>
+
+  <header class="topo">
+    <div class="marca">
+      <svg class="chapeu" viewBox="0 0 64 56" aria-hidden="true">
+        <g fill="currentColor">
+          <circle cx="19" cy="22" r="12"/><circle cx="32" cy="16" r="14"/><circle cx="45" cy="22" r="12"/>
+          <path d="M17 24h30v18H17z"/>
+          <rect x="17" y="45" width="30" height="8" rx="2.5"/>
+        </g>
+        <ellipse cx="27" cy="25" rx="3.2" ry="4.8" fill="#fff"/>
+        <g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+          <path d="M27 30v9"/>
+          <path d="M37 20v19M34.2 20v5.5a2.8 2.8 0 0 0 5.6 0V20"/>
+        </g>
+      </svg>
+      <h1 class="nome">Restaurante do Sabor</h1>
+      <svg class="risco" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M4 9Q100 -3 196 6" fill="none" stroke="#f07a1a" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="chamada">Almoços e quentinhas · 8h às 13h30</p>
+    <p class="data" id="dataHoje"></p>
+  </header>
+
+  <main>
+    <div class="cartao vazio" id="carregando">
+      <p style="margin:0">Carregando o cardápio…</p>
+    </div>
+
+    <div class="cartao vazio" id="vazio" hidden>
+      <h2 id="vazioTitulo">O cardápio de hoje ainda não saiu</h2>
+      <p id="vazioTexto">Chame a gente no WhatsApp para saber o que tem hoje.</p>
+      <a class="botao whats" id="whatsVazio" target="_blank" rel="noopener">
+        <svg aria-hidden="true"><use href="#icone-whats"/></svg> Falar no WhatsApp
+      </a>
+    </div>
+
+    <div id="conteudo" hidden>
+      <div class="secao">
+        <div class="cabeca">
+          <div>
+            <span class="passo">Passo 1</span>
+            <h2>Tamanho da quentinha</h2>
+          </div>
+        </div>
+        <div class="tamanhos" id="tamanhos"></div>
+      </div>
+
+      <div class="cabeca">
+        <div>
+          <span class="passo">Passo 2</span>
+          <h2>Escolha as comidas de hoje</h2>
+          <p class="explica">Toque no que você quer na sua quentinha.</p>
+        </div>
+      </div>
+      <nav class="atalhos" id="atalhos" aria-label="Categorias"></nav>
+      <div id="cardapio"></div>
+
+      <section class="categoria" id="pedido">
+        <div class="cabeca">
+          <div>
+            <span class="passo">Passo 3</span>
+            <h2>Finalize seu pedido</h2>
+          </div>
+        </div>
+        <div class="cartao">
+          <p class="explica" id="resumoVazio" style="margin:0">Seu pedido aparece aqui conforme você escolhe.</p>
+          <ul class="resumo" id="resumo" hidden></ul>
+
+          <label class="rotulo" for="nome">Seu nome</label>
+          <input type="text" id="nome" maxlength="80" autocomplete="name" placeholder="Ex.: Maria">
+
+          <span class="rotulo">Como você quer receber?</span>
+          <div class="opcoes">
+            <label><input type="radio" name="tipo" value="Entrega" checked> Entrega</label>
+            <label><input type="radio" name="tipo" value="Retirar no local"> Retirar no local</label>
+          </div>
+
+          <div id="campoEndereco">
+            <label class="rotulo" for="endereco">Endereço para entrega</label>
+            <input type="text" id="endereco" maxlength="300" autocomplete="street-address" placeholder="Rua, número, bairro, ponto de referência">
+          </div>
+
+          <label class="rotulo" for="pagamento">Forma de pagamento</label>
+          <select id="pagamento">
+            <option>Pix</option>
+            <option>Dinheiro</option>
+            <option>Cartão</option>
+          </select>
+
+          <label class="rotulo" for="obs">Observações (opcional)</label>
+          <textarea id="obs" maxlength="500" placeholder="Ex.: sem cebola, troco para R$ 50..."></textarea>
+
+          <div class="aviso erro" id="erro" role="alert" hidden></div>
+
+          <button class="botao whats cheio" id="enviar" type="button">
+            <svg aria-hidden="true"><use href="#icone-whats"/></svg> Enviar pedido pelo WhatsApp
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <p class="rodape">Mercearia &amp; Restaurante do Sabor · Pedidos pelo WhatsApp <span id="telefone"></span></p>
+  </main>
+
+  <div class="barra" id="barra" hidden>
+    <span class="texto" id="barraTexto"></span>
+    <button class="botao destaque" id="barraBotao" type="button">Ver pedido</button>
+  </div>
+
+  <a class="zap" id="zap" target="_blank" rel="noopener" aria-label="Pedir direto pelo WhatsApp" title="Pedir direto pelo WhatsApp">
+    <svg aria-hidden="true"><use href="#icone-whats"/></svg>
+  </a>
+
+  <script src="config.js"></script>
+  <script src="cardapio.js"></script>
+  <script src="banco.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const escolhidos = new Map(); // id da comida -> quantidade
+    const quentinhas = new Map(); // "M" / "G" -> quantidade
+    const nomes = new Map();
+    let ultimoEnviado = "", codigoAtual = "";
+
+    $("dataHoje").textContent = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+    $("whatsVazio").href = linkWhatsApp("Olá! Qual é o cardápio de hoje?");
+    $("zap").href = linkWhatsApp("Olá! Gostaria de fazer um pedido.");
+    $("telefone").textContent = WHATSAPP_TEXTO;
+
+    iniciar();
+
+    async function iniciar() {
+      if (!restauranteAberto()) {
+        $("carregando").hidden = true;
+        $("vazioTitulo").textContent = "Pedidos encerrados no momento";
+        $("vazioTexto").textContent = `Recebemos pedidos ${TEXTO_HORARIO}. Volte nesse horário ou fale com a gente no WhatsApp.`;
+        $("vazio").hidden = false;
+        return;
+      }
+      let dia = null;
+      try {
+        dia = await buscarCardapio();
+      } catch (e) {
+        $("vazioTitulo").textContent = "Não conseguimos carregar o cardápio";
+        $("vazioTexto").textContent = "Verifique sua internet e tente de novo, ou chame a gente no WhatsApp.";
+      }
+      $("carregando").hidden = true;
+      // Só mostra se o cardápio foi publicado HOJE
+      if (!dia || dia.data !== hojeTexto() || !dia.ids.length) {
+        $("vazio").hidden = false;
+        return;
+      }
+      montarTamanhos();
+      montarCardapio(new Set(dia.ids));
+      $("conteudo").hidden = false;
+      $("barra").hidden = false;
+      document.body.classList.add("com-barra");
+      atualizar();
+    }
+
+    function criarContador(rotulo, valorAtual, aoMudar) {
+      const cont = document.createElement("span");
+      cont.className = "contador";
+      const menos = document.createElement("button");
+      menos.type = "button"; menos.textContent = "−"; menos.disabled = true;
+      menos.setAttribute("aria-label", "Tirar um: " + rotulo);
+      const num = document.createElement("span"); num.textContent = "0";
+      const mais = document.createElement("button");
+      mais.type = "button"; mais.textContent = "+";
+      mais.setAttribute("aria-label", "Adicionar um: " + rotulo);
+      const mudar = (delta) => {
+        const q = Math.max(0, Math.min(20, valorAtual() + delta));
+        num.textContent = q;
+        menos.disabled = q === 0;
+        aoMudar(q);
+        atualizar();
+      };
+      menos.onclick = () => mudar(-1);
+      mais.onclick = () => mudar(1);
+      cont.append(menos, num, mais);
+      return cont;
+    }
+
+    function montarTamanhos() {
+      TAMANHOS.forEach((t) => {
+        const el = document.createElement("div");
+        el.className = "tamanho";
+        const letra = document.createElement("div"); letra.className = "letra"; letra.textContent = t.sigla;
+        const nome = document.createElement("span"); nome.className = "nome"; nome.textContent = t.nome;
+        const preco = document.createElement("span"); preco.className = "preco"; preco.textContent = emReais(t.preco);
+        const cont = criarContador("quentinha " + t.nome, () => quentinhas.get(t.sigla) || 0, (q) => {
+          if (q) quentinhas.set(t.sigla, q); else quentinhas.delete(t.sigla);
+          el.classList.toggle("marcado", q > 0);
+        });
+        el.append(letra, nome, preco, cont);
+        $("tamanhos").append(el);
+      });
+    }
+
+    function montarCardapio(disponiveis) {
+      CARDAPIO.forEach((cat, n) => {
+        const itens = cat.itens.filter((i) => disponiveis.has(i[0]));
+        if (!itens.length) return;
+
+        const atalho = document.createElement("a");
+        atalho.href = "#cat" + n; atalho.textContent = cat.icone + " " + cat.categoria;
+        $("atalhos").append(atalho);
+
+        const sec = document.createElement("section");
+        sec.className = "categoria"; sec.id = "cat" + n;
+        const cabeca = document.createElement("div"); cabeca.className = "cabeca";
+        cabeca.append(tituloCategoria(cat));
+        const lista = document.createElement("div"); lista.className = "lista";
+
+        itens.forEach(([id, nome, desc]) => {
+          nomes.set(id, nome);
+          const el = document.createElement(cat.quantidade ? "div" : "label");
+          el.className = "item";
+          const info = document.createElement("span"); info.className = "info";
+          const nm = document.createElement("span"); nm.className = "nome"; nm.textContent = nome;
+          const ds = document.createElement("span"); ds.className = "desc"; ds.textContent = desc;
+          info.append(nm, ds);
+
+          if (cat.quantidade) {
+            el.style.cursor = "default";
+            el.append(info, criarContador(nome, () => escolhidos.get(id) || 0, (q) => {
+              if (q) escolhidos.set(id, q); else escolhidos.delete(id);
+              el.classList.toggle("marcado", q > 0);
+            }));
+          } else {
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.onchange = () => {
+              if (cb.checked) escolhidos.set(id, 1); else escolhidos.delete(id);
+              el.classList.toggle("marcado", cb.checked);
+              atualizar();
+            };
+            el.append(info, cb);
+          }
+          lista.append(el);
+        });
+
+        sec.append(cabeca, lista);
+        $("cardapio").append(sec);
+      });
+    }
+
+    function totalQuentinhas() {
+      return TAMANHOS.reduce((s, t) => s + (quentinhas.get(t.sigla) || 0) * t.preco, 0);
+    }
+    const temComida = () => CARDAPIO.some((c) => !c.quantidade && c.itens.some((i) => escolhidos.has(i[0])));
+    const temExtra = () => CARDAPIO.some((c) => c.quantidade && c.itens.some((i) => escolhidos.has(i[0])));
+
+    function linha(ul, classe, esquerda, direita) {
+      const li = document.createElement("li");
+      if (classe) li.className = classe;
+      const a = document.createElement("span"); a.textContent = esquerda;
+      li.append(a);
+      if (direita) { const b = document.createElement("span"); b.textContent = direita; li.append(b); }
+      ul.append(li);
+    }
+
+    function atualizar() {
+      const ul = $("resumo");
+      ul.textContent = "";
+      let nQuentinhas = 0;
+
+      if (quentinhas.size) linha(ul, "grupo", "Quentinhas");
+      TAMANHOS.forEach((t) => {
+        const q = quentinhas.get(t.sigla);
+        if (!q) return;
+        nQuentinhas += q;
+        linha(ul, "", `${q}x Quentinha ${t.sigla}`, emReais(q * t.preco));
+      });
+      CARDAPIO.forEach((cat) => {
+        const doGrupo = cat.itens.filter((i) => escolhidos.has(i[0]));
+        if (!doGrupo.length) return;
+        linha(ul, "grupo", cat.categoria);
+        doGrupo.forEach(([id, n]) => linha(ul, "", (cat.quantidade ? escolhidos.get(id) + "x " : "") + n));
+      });
+      const total = totalQuentinhas();
+      if (total) linha(ul, "total", "Total das quentinhas", emReais(total));
+      if (temExtra()) linha(ul, "nota", "Sobremesas e bebidas: valor confirmado no WhatsApp.");
+
+      const vazio = !quentinhas.size && !escolhidos.size;
+      ul.hidden = vazio;
+      $("resumoVazio").hidden = !vazio;
+
+      const barra = $("barraTexto");
+      barra.textContent = "";
+      if (vazio) {
+        barra.textContent = "Monte seu pedido";
+      } else {
+        barra.append(nQuentinhas ? `${nQuentinhas} quentinha${nQuentinhas > 1 ? "s" : ""} · ${emReais(total)}` : "Seu pedido");
+        const p = document.createElement("small");
+        const n = escolhidos.size;
+        p.textContent = n === 0 ? "Escolha as comidas" : n === 1 ? "1 item escolhido" : n + " itens escolhidos";
+        barra.append(p);
+      }
+      $("erro").hidden = true;
+    }
+
+    document.querySelectorAll('input[name="tipo"]').forEach((r) => {
+      r.onchange = () => { $("campoEndereco").hidden = document.querySelector('input[name="tipo"]:checked').value !== "Entrega"; };
+    });
+
+    $("barraBotao").onclick = () => $("pedido").scrollIntoView({ behavior: "smooth" });
+
+    $("enviar").onclick = () => {
+      const nome = $("nome").value.trim();
+      const tipo = document.querySelector('input[name="tipo"]:checked').value;
+      const endereco = $("endereco").value.trim();
+      const obs = $("obs").value.trim();
+
+      let erro = "";
+      if (!restauranteAberto()) erro = `Os pedidos de hoje já encerraram. Recebemos pedidos ${TEXTO_HORARIO}.`;
+      else if (!quentinhas.size && !escolhidos.size) erro = "Escolha o tamanho da quentinha e as comidas do cardápio.";
+      else if (temComida() && !quentinhas.size) erro = "Escolha o tamanho da quentinha (M ou G) lá no começo da página.";
+      else if (quentinhas.size && !temComida()) erro = "Escolha as comidas que vão na sua quentinha.";
+      else if (!nome) erro = "Digite seu nome para a gente identificar o pedido.";
+      else if (tipo === "Entrega" && !endereco) erro = "Digite o endereço para entrega.";
+      if (erro) {
+        $("erro").textContent = erro;
+        $("erro").hidden = false;
+        $("erro").scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+
+      const linhas = [`*Pedido — ${NOME_RESTAURANTE}*`, `*Nome:* ${nome}`, ""];
+      if (quentinhas.size) {
+        linhas.push("*Quentinhas*");
+        TAMANHOS.forEach((t) => {
+          const q = quentinhas.get(t.sigla);
+          if (q) linhas.push(`• ${q}x ${t.sigla} — ${emReais(q * t.preco)}`);
+        });
+        linhas.push("");
+      }
+      CARDAPIO.forEach((cat) => {
+        const doGrupo = cat.itens.filter((i) => escolhidos.has(i[0]));
+        if (!doGrupo.length) return;
+        linhas.push(`*${cat.categoria}*`);
+        doGrupo.forEach(([id, n]) => linhas.push(`• ${cat.quantidade ? escolhidos.get(id) + "x " : ""}${n}`));
+        linhas.push("");
+      });
+      const fimItens = linhas.length;
+      if (quentinhas.size) linhas.push(`*Total das quentinhas:* ${emReais(totalQuentinhas())}`);
+      if (temExtra()) linhas.push("_Sobremesas e bebidas: valor a confirmar_");
+      linhas.push(tipo === "Entrega" ? `*Entrega:* ${endereco}` : "*Retirar no local*");
+      linhas.push(`*Pagamento:* ${$("pagamento").value}`);
+      if (obs) linhas.push(`*Observações:* ${obs}`);
+
+      // Guarda o pedido para ser impresso no restaurante (uma vez só, mesmo se tocar duas vezes)
+      const pedido = {
+        nome, tipo,
+        endereco: tipo === "Entrega" ? endereco : "",
+        pagamento: $("pagamento").value,
+        obs,
+        itens: linhas.slice(3, fimItens).join("\n").replace(/[*_]/g, "").trim(),
+        total: totalQuentinhas(),
+      };
+      const assinatura = JSON.stringify(pedido);
+      if (assinatura !== ultimoEnviado) {
+        ultimoEnviado = assinatura;
+        codigoAtual = String(Math.floor(1000 + Math.random() * 9000));
+        salvarPedido({ ...pedido, codigo: codigoAtual });
+      }
+      linhas[0] = `*Pedido nº ${codigoAtual} — ${NOME_RESTAURANTE}*`;
+
+      window.open(linkWhatsApp(linhas.join("\n")), "_blank", "noopener");
+    };
+  </script>
+</body>
+</html>

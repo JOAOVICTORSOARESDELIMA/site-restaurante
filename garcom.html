@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Restaurante do Sabor — Garçom</title>
+  <meta name="theme-color" content="#3a2a20">
+  <link rel="icon" href="icone.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo.css">
+  <style>
+    .opcoes label { flex: 1; justify-content: center; text-align: center; }
+  </style>
+</head>
+<body>
+  <header class="topo compacto">
+    <div class="marca">
+      <svg class="chapeu" viewBox="0 0 64 56" aria-hidden="true">
+        <g fill="currentColor">
+          <circle cx="19" cy="22" r="12"/><circle cx="32" cy="16" r="14"/><circle cx="45" cy="22" r="12"/>
+          <path d="M17 24h30v18H17z"/>
+          <rect x="17" y="45" width="30" height="8" rx="2.5"/>
+        </g>
+        <ellipse cx="27" cy="25" rx="3.2" ry="4.8" fill="#fff"/>
+        <g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+          <path d="M27 30v9"/>
+          <path d="M37 20v19M34.2 20v5.5a2.8 2.8 0 0 0 5.6 0V20"/>
+        </g>
+      </svg>
+      <h1 class="nome">Restaurante do Sabor</h1>
+    </div>
+    <p class="chamada">Pedidos do garçom</p>
+    <p class="data" id="dataHoje"></p>
+  </header>
+
+  <main>
+    <div class="cartao vazio" id="carregando">
+      <p style="margin:0">Carregando o cardápio…</p>
+    </div>
+
+    <div class="cartao vazio" id="vazio" hidden>
+      <h2 id="vazioTitulo">O cardápio de hoje ainda não saiu</h2>
+      <p id="vazioTexto">Publique o cardápio do dia no painel antes de anotar pedidos.</p>
+      <button class="botao" type="button" onclick="location.reload()">Tentar de novo</button>
+    </div>
+
+    <div id="conteudo" hidden>
+      <div class="aviso certo" id="enviado" role="status" hidden></div>
+
+      <div class="cartao secao">
+        <span class="passo">Passo 1</span>
+        <h2 style="margin-top:4px">Salão ou viagem?</h2>
+        <div class="opcoes" style="margin-top:12px">
+          <label><input type="radio" name="tipo" value="Salão" checked> 🍽️ Salão</label>
+          <label><input type="radio" name="tipo" value="Viagem"> 🥡 Viagem</label>
+        </div>
+        <label class="rotulo" for="nome">Nome do cliente</label>
+        <input type="text" id="nome" maxlength="80" autocomplete="off" placeholder="Ex.: Maria">
+      </div>
+
+      <div class="secao">
+        <div class="cabeca">
+          <div>
+            <span class="passo">Passo 2</span>
+            <h2 id="tituloTamanho">Tamanho do prato</h2>
+          </div>
+        </div>
+        <div class="tamanhos" id="tamanhos"></div>
+      </div>
+
+      <div class="cabeca">
+        <div>
+          <span class="passo">Passo 3</span>
+          <h2>Comidas escolhidas</h2>
+          <p class="explica">Toque no que o cliente pediu.</p>
+        </div>
+      </div>
+      <nav class="atalhos" id="atalhos" aria-label="Categorias"></nav>
+      <div id="cardapio"></div>
+
+      <section class="categoria" id="pedido">
+        <div class="cabeca">
+          <div>
+            <span class="passo">Passo 4</span>
+            <h2>Conferir e enviar</h2>
+          </div>
+        </div>
+        <div class="cartao">
+          <p class="explica" id="resumoVazio" style="margin:0">O pedido aparece aqui conforme você marca.</p>
+          <ul class="resumo" id="resumo" hidden></ul>
+
+          <label class="rotulo" for="pagamento">Forma de pagamento</label>
+          <select id="pagamento">
+            <option>Paga no caixa</option>
+            <option>Pix</option>
+            <option>Dinheiro</option>
+            <option>Cartão</option>
+          </select>
+
+          <label class="rotulo" for="obs">Observações (opcional)</label>
+          <textarea id="obs" maxlength="500" placeholder="Ex.: sem cebola, feijão à parte..."></textarea>
+
+          <div class="aviso erro" id="erro" role="alert" hidden></div>
+
+          <button class="botao destaque cheio" id="enviar" type="button">Enviar para a cozinha</button>
+        </div>
+      </section>
+    </div>
+
+    <p class="rodape">Os pedidos enviados aqui saem na impressora da tela de pedidos.</p>
+  </main>
+
+  <div class="barra" id="barra" hidden>
+    <span class="texto" id="barraTexto"></span>
+    <button class="botao destaque" id="barraBotao" type="button">Ver pedido</button>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="cardapio.js"></script>
+  <script src="banco.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const escolhidos = new Map(); // id da comida -> quantidade
+    const quentinhas = new Map(); // "M" / "G" -> quantidade
+    let disponiveis = new Set();
+    let enviando = false;
+
+    $("dataHoje").textContent = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+
+    const tipoAtual = () => document.querySelector('input[name="tipo"]:checked').value;
+    const nomeTamanho = () => (tipoAtual() === "Salão" ? "Prato" : "Quentinha");
+
+    iniciar();
+
+    async function iniciar() {
+      if (!BANCO_LIGADO) {
+        $("carregando").hidden = true;
+        $("vazioTitulo").textContent = "Banco de dados desligado";
+        $("vazioTexto").textContent = "Sem o banco ligado (config.js) os pedidos não chegam na impressora.";
+        $("vazio").hidden = false;
+        return;
+      }
+      let dia = null;
+      try {
+        dia = await buscarCardapio();
+      } catch (e) {
+        $("vazioTitulo").textContent = "Não conseguimos carregar o cardápio";
+        $("vazioTexto").textContent = "Verifique a internet e tente de novo.";
+      }
+      $("carregando").hidden = true;
+      if (!dia || dia.data !== hojeTexto() || !dia.ids.length) {
+        $("vazio").hidden = false;
+        return;
+      }
+      disponiveis = new Set(dia.ids);
+      montar();
+      $("conteudo").hidden = false;
+      $("barra").hidden = false;
+      document.body.classList.add("com-barra");
+    }
+
+    function montar() {
+      escolhidos.clear();
+      quentinhas.clear();
+      $("tamanhos").textContent = "";
+      $("atalhos").textContent = "";
+      $("cardapio").textContent = "";
+      montarTamanhos();
+      montarCardapio();
+      atualizar();
+    }
+
+    function criarContador(rotulo, valorAtual, aoMudar) {
+      const cont = document.createElement("span");
+      cont.className = "contador";
+      const menos = document.createElement("button");
+      menos.type = "button"; menos.textContent = "−"; menos.disabled = true;
+      menos.setAttribute("aria-label", "Tirar um: " + rotulo);
+      const num = document.createElement("span"); num.textContent = "0";
+      const mais = document.createElement("button");
+      mais.type = "button"; mais.textContent = "+";
+      mais.setAttribute("aria-label", "Adicionar um: " + rotulo);
+      const mudar = (delta) => {
+        const q = Math.max(0, Math.min(20, valorAtual() + delta));
+        num.textContent = q;
+        menos.disabled = q === 0;
+        aoMudar(q);
+        atualizar();
+      };
+      menos.onclick = () => mudar(-1);
+      mais.onclick = () => mudar(1);
+      cont.append(menos, num, mais);
+      return cont;
+    }
+
+    function montarTamanhos() {
+      TAMANHOS.forEach((t) => {
+        const el = document.createElement("div");
+        el.className = "tamanho";
+        const letra = document.createElement("div"); letra.className = "letra"; letra.textContent = t.sigla;
+        const nome = document.createElement("span"); nome.className = "nome"; nome.textContent = t.nome;
+        const preco = document.createElement("span"); preco.className = "preco"; preco.textContent = emReais(t.preco);
+        const cont = criarContador("tamanho " + t.nome, () => quentinhas.get(t.sigla) || 0, (q) => {
+          if (q) quentinhas.set(t.sigla, q); else quentinhas.delete(t.sigla);
+          el.classList.toggle("marcado", q > 0);
+        });
+        el.append(letra, nome, preco, cont);
+        $("tamanhos").append(el);
+      });
+    }
+
+    function montarCardapio() {
+      CARDAPIO.forEach((cat, n) => {
+        const itens = cat.itens.filter((i) => disponiveis.has(i[0]));
+        if (!itens.length) return;
+
+        const atalho = document.createElement("a");
+        atalho.href = "#cat" + n; atalho.textContent = cat.icone + " " + cat.categoria;
+        $("atalhos").append(atalho);
+
+        const sec = document.createElement("section");
+        sec.className = "categoria"; sec.id = "cat" + n;
+        const cabeca = document.createElement("div"); cabeca.className = "cabeca";
+        cabeca.append(tituloCategoria(cat));
+        const lista = document.createElement("div"); lista.className = "lista";
+
+        itens.forEach(([id, nome, desc]) => {
+          const el = document.createElement(cat.quantidade ? "div" : "label");
+          el.className = "item";
+          const info = document.createElement("span"); info.className = "info";
+          const nm = document.createElement("span"); nm.className = "nome"; nm.textContent = nome;
+          const ds = document.createElement("span"); ds.className = "desc"; ds.textContent = desc;
+          info.append(nm, ds);
+
+          if (cat.quantidade) {
+            el.style.cursor = "default";
+            el.append(info, criarContador(nome, () => escolhidos.get(id) || 0, (q) => {
+              if (q) escolhidos.set(id, q); else escolhidos.delete(id);
+              el.classList.toggle("marcado", q > 0);
+            }));
+          } else {
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.onchange = () => {
+              if (cb.checked) escolhidos.set(id, 1); else escolhidos.delete(id);
+              el.classList.toggle("marcado", cb.checked);
+              atualizar();
+            };
+            el.append(info, cb);
+          }
+          lista.append(el);
+        });
+
+        sec.append(cabeca, lista);
+        $("cardapio").append(sec);
+      });
+    }
+
+    function totalQuentinhas() {
+      return TAMANHOS.reduce((s, t) => s + (quentinhas.get(t.sigla) || 0) * t.preco, 0);
+    }
+    const temComida = () => CARDAPIO.some((c) => !c.quantidade && c.itens.some((i) => escolhidos.has(i[0])));
+    const temExtra = () => CARDAPIO.some((c) => c.quantidade && c.itens.some((i) => escolhidos.has(i[0])));
+
+    function linha(ul, classe, esquerda, direita) {
+      const li = document.createElement("li");
+      if (classe) li.className = classe;
+      const a = document.createElement("span"); a.textContent = esquerda;
+      li.append(a);
+      if (direita) { const b = document.createElement("span"); b.textContent = direita; li.append(b); }
+      ul.append(li);
+    }
+
+    // Texto dos itens do pedido (o mesmo formato que sai no cupom)
+    function textoItens() {
+      const linhas = [];
+      if (quentinhas.size) {
+        linhas.push(nomeTamanho() + "s");
+        TAMANHOS.forEach((t) => {
+          const q = quentinhas.get(t.sigla);
+          if (q) linhas.push(`• ${q}x ${t.sigla} — ${emReais(q * t.preco)}`);
+        });
+        linhas.push("");
+      }
+      CARDAPIO.forEach((cat) => {
+        const doGrupo = cat.itens.filter((i) => escolhidos.has(i[0]));
+        if (!doGrupo.length) return;
+        linhas.push(cat.categoria);
+        doGrupo.forEach(([id, n]) => linhas.push(`• ${cat.quantidade ? escolhidos.get(id) + "x " : ""}${n}`));
+        linhas.push("");
+      });
+      if (temExtra()) linhas.push("Sobremesas e bebidas: valor a confirmar");
+      return linhas.join("\n").trim();
+    }
+
+    function atualizar() {
+      const tipo = tipoAtual();
+      $("tituloTamanho").textContent = tipo === "Salão" ? "Tamanho do prato" : "Tamanho da quentinha";
+
+      const ul = $("resumo");
+      ul.textContent = "";
+      let nQuentinhas = 0;
+
+      if (quentinhas.size) linha(ul, "grupo", nomeTamanho() + "s");
+      TAMANHOS.forEach((t) => {
+        const q = quentinhas.get(t.sigla);
+        if (!q) return;
+        nQuentinhas += q;
+        linha(ul, "", `${q}x ${nomeTamanho()} ${t.sigla}`, emReais(q * t.preco));
+      });
+      CARDAPIO.forEach((cat) => {
+        const doGrupo = cat.itens.filter((i) => escolhidos.has(i[0]));
+        if (!doGrupo.length) return;
+        linha(ul, "grupo", cat.categoria);
+        doGrupo.forEach(([id, n]) => linha(ul, "", (cat.quantidade ? escolhidos.get(id) + "x " : "") + n));
+      });
+      const total = totalQuentinhas();
+      if (total) linha(ul, "total", "Total", emReais(total));
+      if (temExtra()) linha(ul, "nota", "Sobremesas e bebidas: valor a confirmar no caixa.");
+
+      const vazio = !quentinhas.size && !escolhidos.size;
+      ul.hidden = vazio;
+      $("resumoVazio").hidden = !vazio;
+
+      const barra = $("barraTexto");
+      barra.textContent = "";
+      const nomeCliente = $("nome").value.trim();
+      const onde = tipo + (nomeCliente ? " · " + nomeCliente : "");
+      if (vazio) {
+        barra.textContent = onde + " · monte o pedido";
+      } else {
+        const nome = nomeTamanho().toLowerCase();
+        barra.append(onde + (nQuentinhas ? ` · ${nQuentinhas} ${nome}${nQuentinhas > 1 ? "s" : ""} · ${emReais(total)}` : ""));
+        const p = document.createElement("small");
+        const n = escolhidos.size;
+        p.textContent = n === 0 ? "Escolha as comidas" : n === 1 ? "1 item escolhido" : n + " itens escolhidos";
+        barra.append(p);
+      }
+      $("erro").hidden = true;
+    }
+
+    document.querySelectorAll('input[name="tipo"]').forEach((r) => { r.onchange = atualizar; });
+    $("nome").oninput = atualizar;
+
+    $("barraBotao").onclick = () => $("pedido").scrollIntoView({ behavior: "smooth" });
+
+    function mostrarErro(texto) {
+      $("erro").textContent = texto;
+      $("erro").hidden = false;
+      $("erro").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    $("enviar").onclick = async () => {
+      if (enviando) return;
+      const tipo = tipoAtual();
+      const nome = $("nome").value.trim();
+      const obs = $("obs").value.trim();
+
+      let erro = "";
+      if (!nome) erro = "Digite o nome do cliente lá no começo da página.";
+      else if (!quentinhas.size && !escolhidos.size) erro = "Marque o tamanho e as comidas do pedido.";
+      else if (temComida() && !quentinhas.size) erro = `Escolha o tamanho do ${nomeTamanho().toLowerCase()} (M ou G).`;
+      else if (quentinhas.size && !temComida()) erro = `Escolha as comidas que vão no ${nomeTamanho().toLowerCase()}.`;
+      if (erro) {
+        mostrarErro(erro);
+        if (!nome) $("nome").focus();
+        return;
+      }
+
+      const codigo = String(Math.floor(1000 + Math.random() * 9000));
+      const pedido = {
+        codigo,
+        origem: "garcom",
+        tipo,
+        nome,
+        endereco: "",
+        pagamento: $("pagamento").value,
+        obs,
+        itens: textoItens(),
+        total: totalQuentinhas(),
+      };
+
+      enviando = true;
+      $("enviar").disabled = true;
+      $("enviar").textContent = "Enviando…";
+      try {
+        await enviarPedido(pedido);
+        $("enviado").textContent = `✅ Pedido nº ${codigo} (${tipo} — ${nome}) enviado para a cozinha.`;
+        $("enviado").hidden = false;
+        // Limpa tudo para o próximo pedido
+        $("nome").value = "";
+        $("obs").value = "";
+        $("pagamento").selectedIndex = 0;
+        montar();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (e) {
+        mostrarErro("Não foi possível enviar. Verifique a internet e toque em enviar de novo.");
+      }
+      enviando = false;
+      $("enviar").disabled = false;
+      $("enviar").textContent = "Enviar para a cozinha";
+    };
+  </script>
+</body>
+</html>

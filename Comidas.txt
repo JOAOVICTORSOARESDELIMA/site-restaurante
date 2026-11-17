@@ -1,0 +1,59 @@
+Acompanhamentos
+
+Feijão carioca: Feijão carioca cozido com tempero caseiro e caldo no ponto.
+Feijão preto: Feijão preto bem temperado, cozido devagar.
+Feijão macassar: Feijão macassar cozido no tempero caseiro, ao estilo nordestino.
+Rubacão com feijão verde: Clássico nordestino de arroz com feijão verde, bem temperado.
+Favada: Prato típico de fava, encorpado e cheio de sabor.
+Arroz branco: Arroz branco soltinho.
+Arroz refogado: Arroz refogado soltinho e temperado.
+Arroz refogado com cenoura: Arroz refogado com cenoura, soltinho e colorido.
+Arroz refogado com couve: Arroz refogado com couve fresquinha.
+Arroz refogado com brócolis: Arroz refogado com brócolis.
+Macarrão alho e óleo: Macarrão temperado no alho e óleo.
+Farofa caseira: Farofa feita na casa, soltinha e bem temperada.
+
+Saladas e guarnições
+
+Salada de folhas: Alface e acelga frescas.
+Salada crua: Tomate, cebola, pimentão e pepino em fatias frescas.
+Vinagrete: Tomate, cebola e pimentão picados no tempero de vinagrete.
+Legumes cozidos: Legumes cozidos no ponto.
+Legumes na maionese: Legumes cozidos com maionese cremosa.
+Legumes e vegetais ao forno: Legumes assados no forno, macios e dourados.
+Purê de batata: Purê de batata cremoso.
+Batata doce: Batata doce cozida, macia e naturalmente adocicada.
+Beterraba: Beterraba cozida em fatias.
+Salada de cenoura e abobrinha com couve: Cenoura e abobrinha refogadas com couve.
+Salada de repolho na maionese: Repolho fatiado com maionese.
+Salpicão de frango: Frango desfiado com legumes e maionese, gelado.
+Mix de repolho com abacaxi: Repolho com pedaços de abacaxi, refrescante.
+Salada de batatinhas ao forno: Batatinhas assadas no forno e temperadas.
+
+Proteínas
+
+Bife acebolado: Bife grelhado com cebola refogada.
+Bife ao molho de tomate: Bife no molho de tomate caseiro.
+Carne moída: Carne moída refogada com tempero caseiro.
+Strogonoff de frango: Frango em molho cremoso de strogonoff.
+Calabresa frita acebolada: Calabresa frita com cebola.
+Frango frito coxa e sobrecoxa: Coxa e sobrecoxa fritas, crocantes por fora e suculentas por dentro.
+Lasca de bacalhau ao forno: Lascas de bacalhau assadas no forno.
+Carne suína torrada: Carne suína torradinha e saborosa.
+Fígado acebolado: Fígado bovino macio com cebola refogada.
+Filé de frango à milanesa: Filé de frango empanado e frito, crocante.
+Galinha guisada: Galinha cozida no molho, bem temperada.
+Linguiça toscana frita: Linguiça toscana frita.
+Fricassê de frango: Frango em molho cremoso, no estilo fricassê.
+Filé de peixe à milanesa: Filé de peixe empanado e frito.
+Filé de frango frito: Filé de frango frito, macio e dourado.
+
+Sobremesas e bebida
+
+Suco da fruta 300 ml: Suco natural da fruta do dia.
+Delícia de abacaxi: Sobremesa cremosa de abacaxi.
+Delícia de goiaba: Sobremesa cremosa de goiaba.
+Salada de frutas: Frutas frescas picadas.
+Mousse de limão: Mousse cremosa e leve de limão.
+Mousse de maracujá: Mousse cremosa de maracujá.
+Mini pudim: Pudim de leite com calda de caramelo.

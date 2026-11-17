@@ -1,0 +1,11 @@
+# Dados privados do restaurante (chaves do Firebase e WhatsApp)
+config.js
+
+# Configurações locais do editor / Claude Code (têm caminhos do computador)
+.claude/
+.vscode/
+
+# Lixo do sistema
+Thumbs.db
+desktop.ini
+.DS_Store
