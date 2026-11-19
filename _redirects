@@ -1,0 +1,4 @@
+# Netlify: páginas que ficam fora do site publicado.
+# O gerador de QR code das mesas é usado só no computador do dono.
+/qrcode.html  /index.html  404!
+/qrcode       /index.html  404!

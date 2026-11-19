@@ -16,10 +16,10 @@ Não tem servidor nem programa para instalar. São só arquivos HTML, CSS e Java
 | Arquivo | Quem usa | Para quê |
 |---|---|---|
 | `index.html` | Clientes | Ver o cardápio de hoje, escolher o tamanho (M/G) e as comidas, e enviar o pedido pelo WhatsApp (entrega ou retirada). |
-| `garcom.html` | Garçons | Anotar pedidos na mesa: **Salão** ou **Viagem**, com o nome do cliente (obrigatório, porque o cliente é chamado pelo nome). O pedido vai direto para a impressora. |
+| `garcom.html` | Garçons e clientes na mesa | Pedido feito na mesa, pelo garçom ou pelo próprio cliente (pelo QR code): **Comer aqui** ou **Para viagem**, com o nome de quem recebe (obrigatório, porque o pedido é chamado pelo nome). O pedido vai direto para a impressora, que imprime SALÃO ou VIAGEM. |
 | `admin.html` | Dono / administrador | Login e escolha das comidas do dia. Ao tocar em **Publicar**, o cardápio aparece para clientes e garçons. |
 | `pedidos.html` | Computador do caixa | Login, lista dos pedidos do dia e impressão automática do cupom (papel de 80 mm ou 58 mm). |
-| `qrcode.html` | Dono / administrador | Gera e imprime o QR code das mesas (4 placas por folha A4 ou 1 grande). O QR abre a `garcom.html`, para o próprio cliente ver o cardápio e pedir da mesa. Aberta no site publicado, já usa o endereço certo. |
+| `qrcode.html` | Dono, no computador | Gera e imprime o QR code das mesas (4 placas por folha A4 ou 1 grande). O QR abre a `garcom.html`. **Não fica no site publicado:** abra o arquivo no computador e digite o endereço do site. |
 
 ## Arquivos de apoio
 
@@ -99,6 +99,8 @@ Com o Firebase vazio, o site funciona em **modo de teste**: o cardápio fica sal
 ### 3. Hospedagem
 
 Qualquer hospedagem de site estático serve: Firebase Hosting, Netlify, GitHub Pages etc. Lembre de enviar também o `config.js` para a hospedagem, porque ele não está no repositório.
+
+No Netlify, o arquivo `_redirects` tira a `qrcode.html` do site publicado (ela responde "página não encontrada"). Em outras hospedagens, simplesmente não envie esse arquivo.
 
 Para testar no computador, abra a pasta com qualquer servidor local (por exemplo, a extensão *Live Server* do VS Code).
 
