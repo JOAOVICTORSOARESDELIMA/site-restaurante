@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Restaurante do Sabor — Garçom</title>
+  <title>Restaurante do Sabor — Pedido na mesa</title>
   <meta name="theme-color" content="#3a2a20">
   <link rel="icon" href="icone.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,7 +32,7 @@
       </svg>
       <h1 class="nome">Restaurante do Sabor</h1>
     </div>
-    <p class="chamada">Pedidos do garçom</p>
+    <p class="chamada">Pedido na mesa</p>
     <p class="data" id="dataHoje"></p>
   </header>
 
@@ -43,7 +43,7 @@
 
     <div class="cartao vazio" id="vazio" hidden>
       <h2 id="vazioTitulo">O cardápio de hoje ainda não saiu</h2>
-      <p id="vazioTexto">Publique o cardápio do dia no painel antes de anotar pedidos.</p>
+      <p id="vazioTexto">Assim que o cardápio do dia for publicado, ele aparece aqui. Se precisar, chame um garçom.</p>
       <button class="botao" type="button" onclick="location.reload()">Tentar de novo</button>
     </div>
 
@@ -52,12 +52,12 @@
 
       <div class="cartao secao">
         <span class="passo">Passo 1</span>
-        <h2 style="margin-top:4px">Salão ou viagem?</h2>
+        <h2 style="margin-top:4px">Vai comer aqui ou levar?</h2>
         <div class="opcoes" style="margin-top:12px">
-          <label><input type="radio" name="tipo" value="Salão" checked> 🍽️ Salão</label>
-          <label><input type="radio" name="tipo" value="Viagem"> 🥡 Viagem</label>
+          <label><input type="radio" name="tipo" value="Salão" checked> 🍽️ Comer aqui</label>
+          <label><input type="radio" name="tipo" value="Viagem"> 🥡 Para viagem</label>
         </div>
-        <label class="rotulo" for="nome">Nome do cliente</label>
+        <label class="rotulo" for="nome">Nome de quem vai receber o pedido</label>
         <input type="text" id="nome" maxlength="80" autocomplete="off" placeholder="Ex.: Maria">
       </div>
 
@@ -75,7 +75,7 @@
         <div>
           <span class="passo">Passo 3</span>
           <h2>Comidas escolhidas</h2>
-          <p class="explica">Toque no que o cliente pediu.</p>
+          <p class="explica">Toque nas comidas do pedido.</p>
         </div>
       </div>
       <nav class="atalhos" id="atalhos" aria-label="Categorias"></nav>
@@ -94,7 +94,7 @@
 
           <label class="rotulo" for="pagamento">Forma de pagamento</label>
           <select id="pagamento">
-            <option>Paga no caixa</option>
+            <option>Pagar no caixa</option>
             <option>Pix</option>
             <option>Dinheiro</option>
             <option>Cartão</option>
@@ -110,7 +110,7 @@
       </section>
     </div>
 
-    <p class="rodape">Os pedidos enviados aqui saem na impressora da tela de pedidos.</p>
+    <p class="rodape">O pedido vai direto para a cozinha. Qualquer dúvida, chame um garçom.</p>
   </main>
 
   <div class="barra" id="barra" hidden>
@@ -132,6 +132,8 @@
 
     const tipoAtual = () => document.querySelector('input[name="tipo"]:checked').value;
     const nomeTamanho = () => (tipoAtual() === "Salão" ? "Prato" : "Quentinha");
+    // Como o tipo aparece na tela (no cupom continua SALÃO / VIAGEM)
+    const rotuloTipo = (t) => (t === "Salão" ? "Comer aqui" : "Para viagem");
 
     iniciar();
 
@@ -328,7 +330,7 @@
       const barra = $("barraTexto");
       barra.textContent = "";
       const nomeCliente = $("nome").value.trim();
-      const onde = tipo + (nomeCliente ? " · " + nomeCliente : "");
+      const onde = rotuloTipo(tipo) + (nomeCliente ? " · " + nomeCliente : "");
       if (vazio) {
         barra.textContent = onde + " · monte o pedido";
       } else {
@@ -360,7 +362,7 @@
       const obs = $("obs").value.trim();
 
       let erro = "";
-      if (!nome) erro = "Digite o nome do cliente lá no começo da página.";
+      if (!nome) erro = "Digite o nome de quem vai receber o pedido, lá no começo da página.";
       else if (!quentinhas.size && !escolhidos.size) erro = "Marque o tamanho e as comidas do pedido.";
       else if (temComida() && !quentinhas.size) erro = `Escolha o tamanho do ${nomeTamanho().toLowerCase()} (M ou G).`;
       else if (quentinhas.size && !temComida()) erro = `Escolha as comidas que vão no ${nomeTamanho().toLowerCase()}.`;
@@ -388,7 +390,7 @@
       $("enviar").textContent = "Enviando…";
       try {
         await enviarPedido(pedido);
-        $("enviado").textContent = `✅ Pedido nº ${codigo} (${tipo} — ${nome}) enviado para a cozinha.`;
+        $("enviado").textContent = `✅ Pedido nº ${codigo} (${rotuloTipo(tipo)} — ${nome}) enviado para a cozinha. Vamos chamar pelo nome quando estiver pronto.`;
         $("enviado").hidden = false;
         // Limpa tudo para o próximo pedido
         $("nome").value = "";

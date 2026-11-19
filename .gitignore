@@ -9,3 +9,6 @@ config.js
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Banner com o telefone do restaurante (fica só no computador)
+Banner restaurante.png

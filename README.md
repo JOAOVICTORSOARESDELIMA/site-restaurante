@@ -16,9 +16,10 @@ Não tem servidor nem programa para instalar. São só arquivos HTML, CSS e Java
 | Arquivo | Quem usa | Para quê |
 |---|---|---|
 | `index.html` | Clientes | Ver o cardápio de hoje, escolher o tamanho (M/G) e as comidas, e enviar o pedido pelo WhatsApp (entrega ou retirada). |
-| `garcom.html` | Garçons | Anotar pedidos na mesa: **Salão** ou **Viagem**, com o nome do cliente (obrigatório, porque o cliente é chamado pelo nome). O pedido vai direto para a impressora. |
+| `garcom.html` | Garçons e clientes na mesa | Pedido feito na mesa, pelo garçom ou pelo próprio cliente (pelo QR code): **Comer aqui** ou **Para viagem**, com o nome de quem recebe (obrigatório, porque o pedido é chamado pelo nome). O pedido vai direto para a impressora, que imprime SALÃO ou VIAGEM. |
 | `admin.html` | Dono / administrador | Login e escolha das comidas do dia. Ao tocar em **Publicar**, o cardápio aparece para clientes e garçons. |
 | `pedidos.html` | Computador do caixa | Login, lista dos pedidos do dia e impressão automática do cupom (papel de 80 mm ou 58 mm). |
+| `qrcode.html` | Dono, no computador | Gera e imprime o QR code das mesas (4 placas por folha A4 ou 1 grande). O QR abre a `garcom.html`. **Não fica no site publicado:** abra o arquivo no computador e digite o endereço do site. |
 
 ## Arquivos de apoio
 
@@ -66,22 +67,24 @@ Com o Firebase vazio, o site funciona em **modo de teste**: o cardápio fica sal
 
 1. Crie um projeto no [Firebase](https://console.firebase.google.com/).
 2. Ative o **Realtime Database**.
-3. Em **Authentication**, ative o login por **e-mail e senha** e crie o usuário do administrador. Não existe tela de cadastro: as contas são criadas pelo console do Firebase.
-4. Coloque regras de segurança parecidas com estas. Todos podem ler o cardápio, só quem tem login pode mudá-lo, qualquer um pode criar pedido e só quem tem login pode ler os pedidos:
+3. Em **Authentication**, ative o login por **e-mail e senha** e crie o usuário do administrador. Não existe tela de cadastro no site: a conta é criada pelo console do Firebase.
+4. Coloque regras de segurança como estas, trocando `EMAIL-DO-ADMIN` pelo e-mail do administrador. Todos podem ler o cardápio, só o administrador pode mudá-lo, qualquer um pode criar pedido (sem alterar pedidos já feitos) e só o administrador pode ler os pedidos:
 
 ```json
 {
   "rules": {
     "cardapio": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": "auth != null && auth.token.email === 'EMAIL-DO-ADMIN'"
     },
     "pedidos": {
+      ".read": "auth != null && auth.token.email === 'EMAIL-DO-ADMIN'",
+      ".write": "auth != null && auth.token.email === 'EMAIL-DO-ADMIN'",
       "$dia": {
-        ".read": "auth != null",
         ".indexOn": ["criadoEm"],
-        "$id": {
-          ".write": "!data.exists()"
+        "$pedido": {
+          ".write": "!data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['codigo', 'nome', 'itens', 'criadoEm']) && newData.child('nome').val().length <= 80 && newData.child('itens').val().length <= 3000 && newData.child('endereco').val().length <= 300 && newData.child('obs').val().length <= 500 && newData.child('criadoEm').val() <= now"
         }
       }
     }
@@ -89,11 +92,15 @@ Com o Firebase vazio, o site funciona em **modo de teste**: o cardápio fica sal
 }
 ```
 
+> Use o e-mail do administrador nas regras, e não só `auth != null`. Com o login por e-mail e senha ativo, qualquer pessoa que tenha a `apiKey` (que fica visível no site) consegue criar uma conta pela API do Firebase, mesmo sem tela de cadastro. Com `auth != null`, essa pessoa poderia mudar o cardápio e ler os pedidos dos clientes.
+
 > A chave de API do Firebase (`apiKey`) aparece no navegador de quem abre o site, porque é assim que o Firebase funciona na web. Quem protege os dados são as **regras** acima e o login, não o segredo da chave. Mesmo assim, ela fica fora do repositório.
 
 ### 3. Hospedagem
 
 Qualquer hospedagem de site estático serve: Firebase Hosting, Netlify, GitHub Pages etc. Lembre de enviar também o `config.js` para a hospedagem, porque ele não está no repositório.
+
+No Netlify, o arquivo `_redirects` tira a `qrcode.html` do site publicado (ela responde "página não encontrada"). Em outras hospedagens, simplesmente não envie esse arquivo.
 
 Para testar no computador, abra a pasta com qualquer servidor local (por exemplo, a extensão *Live Server* do VS Code).
 
